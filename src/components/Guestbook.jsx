@@ -1,7 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { Send, User, MessageCircle } from 'lucide-react';
+import React, { useState } from 'react';
+import { Send, User, MessageCircle, CheckCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import api from '../api';
 
-export default function Guestbook({ theme = 'original', isKonjacActive = false }) {
+export default function Guestbook({ theme = 'original', isKonjacActive = false, userName }) {
   const kt = (text) => {
     if (!isKonjacActive) return text;
     const translations = {
@@ -15,43 +17,36 @@ export default function Guestbook({ theme = 'original', isKonjacActive = false }
     return translations[text] || `${text}-mon`;
   };
 
-  const [messages, setMessages] = useState([]);
-  const [name, setName] = useState('');
+  const [name, setName] = useState(userName || '');
   const [content, setContent] = useState('');
+  const [isSent, setIsSent] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Load from local storage
-  useEffect(() => {
-    const saved = localStorage.getItem('birthday_messages');
-    if (saved) {
-      try {
-        setMessages(JSON.parse(saved));
-      } catch (e) {
-        console.error('Failed to parse messages', e);
-      }
-    }
-  }, []);
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim() || !content.trim()) return;
 
-    const newMessage = {
-      id: Date.now(),
-      name: name.trim(),
-      content: content.trim(),
-      date: new Date().toLocaleDateString()
-    };
-
-    const updated = [newMessage, ...messages];
-    setMessages(updated);
-    localStorage.setItem('birthday_messages', JSON.stringify(updated));
-    
-    setName('');
-    setContent('');
+    setIsLoading(true);
+    try {
+      await api.post('/gadget-interactions', {
+        user_name: name.trim(),
+        gadget_type: 'guestbook',
+        content: content.trim()
+      });
+      
+      setIsSent(true);
+      setName(userName || '');
+      setContent('');
+      setTimeout(() => setIsSent(false), 5000);
+    } catch (error) {
+      console.error('Error saving message:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <section className="py-24 px-4 max-w-5xl mx-auto relative overflow-hidden" id="guestbook">
+    <section className="py-24 px-4 max-w-4xl mx-auto relative overflow-hidden" id="guestbook">
       <div className="text-center mb-16">
         <h2 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tighter uppercase italic">
           {kt("Déjame un mensaje")}
@@ -62,86 +57,86 @@ export default function Guestbook({ theme = 'original', isKonjacActive = false }
         </p>
       </div>
 
-      <div className="grid lg:grid-cols-5 gap-12 items-start">
-        {/* Form: Default Glass Style */}
-        <div className="lg:col-span-2 relative group">
-          <div className="glass-card p-8 rounded-3xl relative z-10 border border-white/10 bg-white/5 backdrop-blur-md">
-            <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-              <div>
-                <label className="block text-slate-300 text-sm font-semibold mb-2 flex items-center gap-2">
-                  <User size={16} className="text-primary-400" /> {kt("Tu Nombre")}
-                </label>
-                <input
-                  type="text"
-                  placeholder="Tu nombre aquí"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white focus:outline-none focus:border-primary-500 transition-all"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-slate-300 text-sm font-semibold mb-2 flex items-center gap-2">
-                  <MessageCircle size={16} className="text-primary-400" /> {kt("Mensaje")}
-                </label>
-                <textarea
-                  rows="5"
-                  placeholder="Escribe algo especial..."
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white focus:outline-none focus:border-primary-500 transition-all resize-none"
-                  required
-                ></textarea>
-              </div>
-              <button
-                type="submit"
-                className="w-full bg-primary-600 hover:bg-primary-500 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(124,58,237,0.3)]"
-              >
-                <Send size={18} />
-                {kt("Enviar Mensaje")}
-              </button>
-            </form>
-          </div>
-        </div>
-
-        {/* Message List: Default Glass Style */}
-        <div className="lg:col-span-3">
-          <div className="flex flex-col gap-6 max-h-[650px] overflow-y-auto pr-4 custom-scrollbar">
-            {messages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-20 bg-white/5 border-2 border-dashed border-white/10 rounded-3xl">
-                <MessageCircle size={48} className="text-slate-700 mb-4 opacity-20" />
-                <p className="text-slate-500 font-bold italic">{kt("Aún no hay mensajes. ¡Sé el primero en escribir!")}</p>
-              </div>
-            ) : (
-              messages.map((msg) => (
-                <div key={msg.id} className="glass-card p-8 border border-white/10 text-white rounded-2xl relative transition-all hover:-translate-y-1">
-                  <div className="flex justify-between items-center mb-4 relative z-10">
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 rounded-full flex items-center justify-center bg-primary-500/20 text-primary-400">
-                        <User size={16} />
-                      </div>
-                      <h4 className="font-black uppercase tracking-tighter text-lg text-primary-300">
-                        {msg.name}
-                      </h4>
-                    </div>
-                    <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-lg bg-white/5 text-slate-500">
-                      {msg.date}
-                    </span>
+      <div className="max-w-2xl mx-auto relative group">
+        <div className="glass-card p-8 rounded-3xl relative z-10 border border-white/10 bg-white/5 backdrop-blur-md">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+            <AnimatePresence mode="wait">
+              {isSent ? (
+                <motion.div
+                  key="success"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="py-12 flex flex-col items-center text-center gap-4"
+                >
+                  <div className="w-20 h-20 bg-emerald-500/20 rounded-full flex items-center justify-center text-emerald-400 mb-2">
+                    <CheckCircle size={48} />
                   </div>
-                  
-                  <p className="relative z-10 text-lg leading-relaxed font-medium italic text-slate-200">
-                    "{msg.content}"
+                  <h3 className="text-2xl font-bold text-white">¡Mensaje Enviado!</h3>
+                  <p className="text-slate-400">
+                    Tu mensaje ha sido guardado de forma privada en el Bolsillo 4D. ¡Gracias por tus palabras!
                   </p>
-                  
-                  {theme === 'doraemon' && (
-                    <div className="absolute -bottom-3 -right-3 w-12 h-12 rotate-12 transition-opacity">
-                      <img src="/imagenes/dorayaki.png" className="w-full h-full object-contain opacity-80" alt="" />
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-          </div>
+                  <button
+                    onClick={() => setIsSent(false)}
+                    className="mt-4 text-primary-400 font-bold hover:text-white transition-colors"
+                  >
+                    Enviar otro mensaje
+                  </button>
+                </motion.div>
+              ) : (
+                <motion.div
+                  key="form"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="flex flex-col gap-6"
+                >
+                  <div>
+                    <label className="block text-slate-300 text-sm font-semibold mb-2 flex items-center gap-2">
+                      <User size={16} className="text-primary-400" /> {kt("Tu Nombre")}
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="Tu nombre aquí"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white focus:outline-none focus:border-primary-500 transition-all"
+                      required
+                      disabled={isLoading}
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-slate-300 text-sm font-semibold mb-2 flex items-center gap-2">
+                      <MessageCircle size={16} className="text-primary-400" /> {kt("Mensaje")}
+                    </label>
+                    <textarea
+                      rows="5"
+                      placeholder="Escribe algo especial..."
+                      value={content}
+                      onChange={(e) => setContent(e.target.value)}
+                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-4 text-white focus:outline-none focus:border-primary-500 transition-all resize-none"
+                      required
+                      disabled={isLoading}
+                    ></textarea>
+                  </div>
+                  <button
+                    type="submit"
+                    disabled={isLoading}
+                    className="w-full bg-primary-600 hover:bg-primary-500 text-white font-bold py-4 rounded-xl flex items-center justify-center gap-2 transition-all shadow-[0_0_20px_rgba(124,58,237,0.3)] disabled:opacity-50"
+                  >
+                    {isLoading ? (
+                      <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                    ) : (
+                      <>
+                        <Send size={18} />
+                        {kt("Enviar Mensaje")}
+                      </>
+                    )}
+                  </button>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </form>
         </div>
       </div>
     </section>

@@ -1,17 +1,28 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, XCircle, Brain } from 'lucide-react';
+import { CheckCircle2, XCircle, Brain, Trophy } from 'lucide-react';
 import { config } from '../config';
+import api from '../api';
 
-export default function MiniQuiz({ theme = 'original', onComplete }) {
+export default function MiniQuiz({ theme = 'original', onComplete, userName }) {
   const [currentStep, setCurrentStep] = useState(0); 
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [score, setScore] = useState(0);
   const [feedback, setFeedback] = useState(null); 
   const [selectedAnswer, setSelectedAnswer] = useState(null);
+  const [history, setHistory] = useState([]);
 
   // Use theme-specific quiz from config
   const quizData = config.themes[theme].quiz;
+
+  const fetchHistory = async () => {
+    try {
+      const response = await api.get('/gadget-interactions?type=quiz');
+      setHistory(response.data);
+    } catch (error) {
+      console.error('Error fetching quiz history:', error);
+    }
+  };
 
   useEffect(() => {
     // Reset if theme changes while playing
@@ -20,34 +31,51 @@ export default function MiniQuiz({ theme = 'original', onComplete }) {
     setScore(0);
     setFeedback(null);
     setSelectedAnswer(null);
+    fetchHistory();
   }, [theme]);
 
   const handleAnswer = (index) => {
     if (feedback) return;
     setSelectedAnswer(index);
 
-    if (index === quizData[currentQuestion].correct) {
-      setScore(score + 1);
+    const isCorrect = index === quizData[currentQuestion].correct;
+    const newScore = isCorrect ? score + 1 : score;
+    
+    if (isCorrect) {
+      setScore(newScore);
       setFeedback('correct');
     } else {
       setFeedback('wrong');
     }
 
-    setTimeout(() => {
+    setTimeout(async () => {
       setFeedback(null);
       setSelectedAnswer(null);
       if (currentQuestion < quizData.length - 1) {
         setCurrentQuestion(currentQuestion + 1);
       } else {
         setCurrentStep(2);
-        if (onComplete) onComplete(score + (index === quizData[currentQuestion].correct ? 1 : 0));
+        
+        // Log score to database
+        try {
+          await api.post('/gadget-interactions', {
+            user_name: userName || 'Anónimo',
+            gadget_type: 'quiz',
+            content: `Puntaje: ${newScore}/${quizData.length}`
+          });
+          fetchHistory();
+        } catch (error) {
+          console.error('Error saving quiz score:', error);
+        }
+
+        if (onComplete) onComplete(newScore);
       }
     }, 1500);
   };
 
   return (
-    <section className="py-20 px-4 max-w-2xl mx-auto" id="quiz">
-      <div className="glass-card p-8 md:p-12 rounded-3xl relative overflow-hidden">
+    <section className="py-20 px-4 max-w-5xl mx-auto flex flex-col lg:flex-row gap-12" id="quiz">
+      <div className="flex-1 glass-card p-8 md:p-12 rounded-3xl relative overflow-hidden h-fit">
         {/* Decoration */}
         <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary-500/10 rounded-full blur-3xl" />
         <div className="absolute -bottom-10 -left-10 w-40 h-40 bg-secondary-500/10 rounded-full blur-3xl" />
@@ -136,7 +164,11 @@ export default function MiniQuiz({ theme = 'original', onComplete }) {
                      : "¡Buen intento! Sigue celebrando con nosotros. 🎉"}
                 </p>
                 <button
-                  onClick={() => setCurrentStep(0)}
+                  onClick={() => {
+                    setCurrentStep(0);
+                    setCurrentQuestion(0);
+                    setScore(0);
+                  }}
                   className="text-primary-400 underline font-semibold hover:text-white transition-colors"
                 >
                   Intentar de nuevo
@@ -144,6 +176,36 @@ export default function MiniQuiz({ theme = 'original', onComplete }) {
               </motion.div>
             )}
           </AnimatePresence>
+        </div>
+      </div>
+
+      {/* Score History / Leaderboard */}
+      <div className="w-full lg:w-80 bg-white/5 backdrop-blur-md rounded-[2.5rem] border-2 border-white/10 p-6 flex flex-col h-[500px]">
+        <h3 className="text-xl font-black text-white mb-6 flex items-center gap-2">
+           <Trophy className="text-yellow-400" size={24} /> Ranking de Amigos
+        </h3>
+        <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar text-left">
+          {history.length > 0 ? history.slice(0, 15).map((item, idx) => (
+            <div key={item.id} className="bg-white/5 rounded-2xl p-4 border border-white/5 flex items-center gap-4 relative overflow-hidden group">
+              <div className="text-lg font-black text-white/20 w-6">#{idx + 1}</div>
+              <div className="flex-1">
+                <p className="text-primary-400 font-bold text-xs uppercase tracking-tighter mb-0.5">
+                  {item.user_name}
+                </p>
+                <p className="text-white font-black text-lg leading-none">{item.content.split(': ')[1]}</p>
+              </div>
+              {item.content.includes(quizData.length.toString() + '/' + quizData.length.toString()) && (
+                <div className="absolute -right-2 -bottom-2 opacity-10 group-hover:opacity-30 transition-opacity rotate-12">
+                   <Trophy size={60} className="text-yellow-400" />
+                </div>
+              )}
+            </div>
+          )) : (
+            <div className="flex flex-col items-center justify-center h-full opacity-30">
+               <Brain size={48} className="mb-4" />
+               <p className="text-center italic">Aún no hay puntajes...</p>
+            </div>
+          )}
         </div>
       </div>
     </section>

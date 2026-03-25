@@ -19,7 +19,7 @@ export default function Hero({ theme = 'original', isKonjacActive = false }) {
     // Simple Doraemon-themed mock translation logic
     const translations = {
       "¡Feliz Cumpleaños!": "¡Omedetou Gozaimasu! 🎉",
-      "¡Feliz Cumpleaños a lo Doraemon, Maykol!": "¡HB en el Siglo XXII! 🤖",
+      "¡Feliz Cumpleaños a lo Doraemon, Maykol!": "¡Mayk en el Siglo XXII! 🤖",
       "Un día especial merece una celebración espectacular.": "¡Con mis inventos, hoy será el mejor día de la galaxia!",
       "¡Con la hélice o la puerta mágica, este día será galáctico!": "¡Usaremos el Take-copter para ver los fuegos artificiales!",
       "Tiempo en el mundo": "Cronometraje Espacio-Temporal",

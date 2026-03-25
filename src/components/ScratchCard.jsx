@@ -1,18 +1,29 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { config } from '../config';
+import gadgetsData from '../assets/dataDoraemon.json';
 
 export default function ScratchCard({ theme = 'original' }) {
   const canvasRef = useRef(null);
   const [isRevealed, setIsRevealed] = useState(false);
   const [scratchPercent, setScratchPercent] = useState(0);
+  const [gadget, setGadget] = useState(null);
 
   // Use theme-specific image
-  const scratchImage = config.themes[theme].scratchImage;
+  const scratchImage = theme === 'doraemon' && gadget 
+    ? `/${gadget.image}`
+    : config.themes[theme].scratchImage;
 
   useEffect(() => {
     // Reset reveal when theme changes
     setIsRevealed(false);
     setScratchPercent(0);
+    
+    if (theme === 'doraemon') {
+      const randomGadget = gadgetsData[Math.floor(Math.random() * gadgetsData.length)];
+      setGadget(randomGadget);
+    } else {
+      setGadget(null);
+    }
     
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -102,12 +113,12 @@ export default function ScratchCard({ theme = 'original' }) {
         {theme === 'doraemon' ? 'Raspa para ver qué invento trajo Doraemon del futuro.' : 'Usa tu mouse o el dedo para descubrir un momento especial.'}
       </p>
 
-      <div className="relative w-full max-w-sm aspect-[4/3] rounded-3xl overflow-hidden glass-card shadow-2xl border-4 border-white/20 select-none">
+      <div className={`relative w-full max-w-sm aspect-[4/3] rounded-3xl overflow-hidden shadow-2xl border-4 border-white/20 select-none ${theme === 'doraemon' ? 'bg-slate-950 p-8' : 'glass-card'}`}>
         <img 
           key={scratchImage}
           src={scratchImage} 
           alt="Sorpresa" 
-          className="absolute inset-0 w-full h-full object-cover"
+          className={`absolute inset-0 w-full h-full ${theme === 'doraemon' ? 'object-contain p-12' : 'object-cover'}`}
         />
         
         <canvas
@@ -118,8 +129,15 @@ export default function ScratchCard({ theme = 'original' }) {
         />
 
         {isRevealed && (
-          <div className="absolute bottom-6 right-6 bg-white/20 backdrop-blur-md px-4 py-2 rounded-full text-white border border-white/30 font-bold animate-bounce z-10">
-            🎉 ¡Sorpresa revelada!
+          <div className="absolute inset-x-4 bottom-6 bg-white/20 backdrop-blur-md px-4 py-3 rounded-2xl text-white border border-white/30 font-bold z-10 text-center animate-in fade-in slide-in-from-bottom-2 duration-500">
+            {theme === 'doraemon' && gadget ? (
+              <>
+                <div className="text-[10px] uppercase tracking-widest opacity-70 mb-1">Has encontrado:</div>
+                <div className="text-xl italic">✨ {gadget.title} ✨</div>
+              </>
+            ) : (
+              '🎉 ¡Sorpresa revelada!'
+            )}
           </div>
         )}
       </div>
