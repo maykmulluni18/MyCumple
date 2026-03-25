@@ -71,7 +71,7 @@ export const config = {
       icon: "Baby",
     },
     {
-      year: "2018",
+      year: "2023",
       title: "Graduación",
       description: "Un gran paso hacia el futuro y nuevas metas.",
       icon: "School",
