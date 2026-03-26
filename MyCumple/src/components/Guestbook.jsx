@@ -33,7 +33,7 @@ export default function Guestbook({ theme = 'original', isKonjacActive = false, 
         gadget_type: 'guestbook',
         content: content.trim()
       });
-      
+
       setIsSent(true);
       setName(userName || '');
       setContent('');
@@ -46,7 +46,7 @@ export default function Guestbook({ theme = 'original', isKonjacActive = false, 
   };
 
   return (
-    <section className="py-24 px-4 max-w-4xl mx-auto relative overflow-hidden" id="guestbook">
+    <section className="py-10 px-4 max-w-4xl mx-auto relative overflow-hidden" id="guestbook">
       <div className="text-center mb-16">
         <h2 className="text-4xl md:text-5xl font-black text-white mb-4 tracking-tighter uppercase italic">
           {kt("Déjame un mensaje")}

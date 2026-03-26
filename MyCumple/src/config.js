@@ -2,6 +2,7 @@
 import doraemon1 from "./assets/Doraemon_1.jpg";
 import doraemon2 from "./assets/Doraemon_2.jpg";
 import doraemon3 from "./assets/Doraemon_3.jpg";
+import QuizzDoraemon from "./QuizzDoraemon";
 
 export const config = {
   // Configuración de Temas
@@ -36,23 +37,7 @@ export const config = {
       secondary: "#ED1C24",
       heroTitle: "¡Feliz Cumpleaños a lo Doraemon, Maykol!",
       heroSubtitle: "¡Con la hélice o la puerta mágica, este día será galáctico!",
-      quiz: [
-        {
-          question: "¿Cuál es el postre favorito de Doraemon?",
-          options: ["Sushi", "Dorayaki", "Mochi", "Ramen"],
-          correct: 1
-        },
-        {
-          question: "¿Dónde guarda Doraemon sus inventos?",
-          options: ["En su casa", "En un baúl", "En su bolsillo de la 4ta dimensión", "En el futuro"],
-          correct: 2
-        },
-        {
-          question: "¿A qué le tiene más miedo Doraemon?",
-          options: ["A los gatos", "A los ratones", "Al agua", "A los exámenes"],
-          correct: 1
-        }
-      ],
+      quiz: QuizzDoraemon,
       scratchImage: "https://images.squarespace-cdn.com/content/v1/5e1f06b677a2d46e27a69796/1586548540846-E9J2K1W1Z2X2V6C6V6C6/Doraemon.jpg?format=1500w",
       musicUrl: "https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3",
     }

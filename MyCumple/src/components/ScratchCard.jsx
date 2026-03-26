@@ -9,7 +9,7 @@ export default function ScratchCard({ theme = 'original' }) {
   const [gadget, setGadget] = useState(null);
 
   // Use theme-specific image
-  const scratchImage = theme === 'doraemon' && gadget 
+  const scratchImage = theme === 'doraemon' && gadget
     ? `/${gadget.image}`
     : config.themes[theme].scratchImage;
 
@@ -17,14 +17,14 @@ export default function ScratchCard({ theme = 'original' }) {
     // Reset reveal when theme changes
     setIsRevealed(false);
     setScratchPercent(0);
-    
+
     if (theme === 'doraemon') {
       const randomGadget = gadgetsData[Math.floor(Math.random() * gadgetsData.length)];
       setGadget(randomGadget);
     } else {
       setGadget(null);
     }
-    
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -33,10 +33,10 @@ export default function ScratchCard({ theme = 'original' }) {
     const height = canvas.height;
 
     ctx.globalCompositeOperation = 'source-over';
-    ctx.fillStyle = '#475569'; 
+    ctx.fillStyle = '#475569';
     ctx.fillRect(0, 0, width, height);
-    
-    ctx.fillStyle = '#cbd5e1'; 
+
+    ctx.fillStyle = '#cbd5e1';
     ctx.font = 'bold 24px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillText('¡RASPA AQUÍ!', width / 2, height / 2);
@@ -86,7 +86,7 @@ export default function ScratchCard({ theme = 'original' }) {
     canvas.addEventListener('mousedown', handleMouseDown);
     canvas.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
-    
+
     // Touch support
     const handleTouchMove = (e) => {
       const rect = canvas.getBoundingClientRect();
@@ -105,7 +105,7 @@ export default function ScratchCard({ theme = 'original' }) {
   }, [theme]); // Redraw cover on theme change
 
   return (
-    <section className="py-20 px-4 flex flex-col items-center">
+    <section className="py-10 px-4 flex flex-col items-center">
       <h2 className="text-4xl font-bold text-white mb-8 text-center uppercase tracking-tight">
         {theme === 'doraemon' ? '¿Qué hay en el bolsillo?' : 'Tu Tarjeta de la Suerte'} 🎫
       </h2>
@@ -114,13 +114,13 @@ export default function ScratchCard({ theme = 'original' }) {
       </p>
 
       <div className={`relative w-full max-w-sm aspect-[4/3] rounded-3xl overflow-hidden shadow-2xl border-4 border-white/20 select-none ${theme === 'doraemon' ? 'bg-slate-950 p-8' : 'glass-card'}`}>
-        <img 
+        <img
           key={scratchImage}
-          src={scratchImage} 
-          alt="Sorpresa" 
+          src={scratchImage}
+          alt="Sorpresa"
           className={`absolute inset-0 w-full h-full ${theme === 'doraemon' ? 'object-contain p-12' : 'object-cover'}`}
         />
-        
+
         <canvas
           ref={canvasRef}
           width={400}

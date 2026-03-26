@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, XCircle, Brain, Trophy } from 'lucide-react';
 import { config } from '../config';
 import api from '../api';
 
 export default function MiniQuiz({ theme = 'original', onComplete, userName }) {
-  const [currentStep, setCurrentStep] = useState(0); 
+  const [currentStep, setCurrentStep] = useState(0);
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [score, setScore] = useState(0);
-  const [feedback, setFeedback] = useState(null); 
+  const [feedback, setFeedback] = useState(null);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [history, setHistory] = useState([]);
 
@@ -34,13 +34,39 @@ export default function MiniQuiz({ theme = 'original', onComplete, userName }) {
     fetchHistory();
   }, [theme]);
 
+  const leaderboard = useMemo(() => {
+    if (!history.length) return [];
+
+    // Group by user and find their best score
+    const bestScores = history.reduce((acc, current) => {
+      const name = current.user_name || 'Anónimo';
+      // Extract score from "Puntaje: X/Y"
+      const scoreMatch = current.content.match(/\d+/);
+      const currentScore = scoreMatch ? parseInt(scoreMatch[0]) : 0;
+
+      if (!acc[name] || currentScore > acc[name].scoreValue) {
+        acc[name] = {
+          ...current,
+          scoreValue: currentScore,
+          displayScore: current.content.split(': ')[1] || '0/0'
+        };
+      }
+      return acc;
+    }, {});
+
+    // Convert to array and sort by scoreValue descending
+    return Object.values(bestScores)
+      .sort((a, b) => b.scoreValue - a.scoreValue)
+      .slice(0, 15);
+  }, [history]);
+
   const handleAnswer = (index) => {
     if (feedback) return;
     setSelectedAnswer(index);
 
     const isCorrect = index === quizData[currentQuestion].correct;
     const newScore = isCorrect ? score + 1 : score;
-    
+
     if (isCorrect) {
       setScore(newScore);
       setFeedback('correct');
@@ -55,7 +81,7 @@ export default function MiniQuiz({ theme = 'original', onComplete, userName }) {
         setCurrentQuestion(currentQuestion + 1);
       } else {
         setCurrentStep(2);
-        
+
         // Log score to database
         try {
           await api.post('/gadget-interactions', {
@@ -74,7 +100,7 @@ export default function MiniQuiz({ theme = 'original', onComplete, userName }) {
   };
 
   return (
-    <section className="py-20 px-4 max-w-5xl mx-auto flex flex-col lg:flex-row gap-12" id="quiz">
+    <section className="py-0 px-4 max-w-5xl mx-auto flex flex-col lg:flex-row gap-12" id="quiz">
       <div className="flex-1 glass-card p-8 md:p-12 rounded-3xl relative overflow-hidden h-fit">
         {/* Decoration */}
         <div className="absolute -top-10 -right-10 w-40 h-40 bg-primary-500/10 rounded-full blur-3xl" />
@@ -131,13 +157,12 @@ export default function MiniQuiz({ theme = 'original', onComplete, userName }) {
                       key={idx}
                       onClick={() => handleAnswer(idx)}
                       disabled={!!feedback}
-                      className={`w-full text-left p-5 rounded-2xl border transition-all flex justify-between items-center ${
-                        feedback && idx === quizData[currentQuestion].correct
-                          ? 'bg-green-500/20 border-green-500 text-green-100'
-                          : feedback === 'wrong' && idx === selectedAnswer
+                      className={`w-full text-left p-5 rounded-2xl border transition-all flex justify-between items-center ${feedback && idx === quizData[currentQuestion].correct
+                        ? 'bg-green-500/20 border-green-500 text-green-100'
+                        : feedback === 'wrong' && idx === selectedAnswer
                           ? 'bg-red-500/20 border-red-500 text-red-100'
                           : 'bg-white/5 border-white/10 text-slate-200 hover:bg-white/10 hover:border-white/20'
-                      }`}
+                        }`}
                     >
                       {option}
                       {feedback && idx === quizData[currentQuestion].correct && <CheckCircle2 size={20} />}
@@ -156,12 +181,12 @@ export default function MiniQuiz({ theme = 'original', onComplete, userName }) {
                 className="text-center"
               >
                 <h2 className="text-4xl font-extrabold text-white mb-4">
-                   Puntaje: {score}/{quizData.length}
+                  Puntaje: {score}/{quizData.length}
                 </h2>
                 <p className="text-xl text-slate-300 mb-8 px-4">
-                  {score === quizData.length 
-                     ? (theme === 'doraemon' ? "¡Eres un experto del siglo XXII! 🔥" : "¡Eres un experto/a! Tienes acceso VIP ilimitado. 🔥")
-                     : "¡Buen intento! Sigue celebrando con nosotros. 🎉"}
+                  {score === quizData.length
+                    ? (theme === 'doraemon' ? "¡Eres un experto del siglo XXII! 🔥" : "¡Eres un experto/a! Tienes acceso VIP ilimitado. 🔥")
+                    : "¡Buen intento! Sigue celebrando con nosotros. 🎉"}
                 </p>
                 <button
                   onClick={() => {
@@ -182,28 +207,28 @@ export default function MiniQuiz({ theme = 'original', onComplete, userName }) {
       {/* Score History / Leaderboard */}
       <div className="w-full lg:w-80 bg-white/5 backdrop-blur-md rounded-[2.5rem] border-2 border-white/10 p-6 flex flex-col h-[500px]">
         <h3 className="text-xl font-black text-white mb-6 flex items-center gap-2">
-           <Trophy className="text-yellow-400" size={24} /> Ranking de Amigos
+          <Trophy className="text-yellow-400" size={24} /> Ranking de Amigos
         </h3>
         <div className="flex-1 overflow-y-auto pr-2 space-y-4 custom-scrollbar text-left">
-          {history.length > 0 ? history.slice(0, 15).map((item, idx) => (
+          {leaderboard.length > 0 ? leaderboard.map((item, idx) => (
             <div key={item.id} className="bg-white/5 rounded-2xl p-4 border border-white/5 flex items-center gap-4 relative overflow-hidden group">
               <div className="text-lg font-black text-white/20 w-6">#{idx + 1}</div>
               <div className="flex-1">
                 <p className="text-primary-400 font-bold text-xs uppercase tracking-tighter mb-0.5">
                   {item.user_name}
                 </p>
-                <p className="text-white font-black text-lg leading-none">{item.content.split(': ')[1]}</p>
+                <p className="text-white font-black text-lg leading-none">{item.displayScore}</p>
               </div>
-              {item.content.includes(quizData.length.toString() + '/' + quizData.length.toString()) && (
+              {item.scoreValue === quizData.length && (
                 <div className="absolute -right-2 -bottom-2 opacity-10 group-hover:opacity-30 transition-opacity rotate-12">
-                   <Trophy size={60} className="text-yellow-400" />
+                  <Trophy size={60} className="text-yellow-400" />
                 </div>
               )}
             </div>
           )) : (
             <div className="flex flex-col items-center justify-center h-full opacity-30">
-               <Brain size={48} className="mb-4" />
-               <p className="text-center italic">Aún no hay puntajes...</p>
+              <Brain size={48} className="mb-4" />
+              <p className="text-center italic text-slate-400">¿Quién será el primero?</p>
             </div>
           )}
         </div>

@@ -3,11 +3,70 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Play, MousePointer2, AlertCircle, Keyboard, Zap } from 'lucide-react';
 import api from '../api';
 
+// const DIFFICULTIES = {
+//   fácil: { itemSpeed: 1.2, spawnInterval: 1200, mouseChance: 0.1, playerSpeed: 1.3, label: 'Fácil 🥯', color: 'bg-green-500', multiplier: 0.4 },
+//   normal: { itemSpeed: 1.8, spawnInterval: 900, mouseChance: 0.2, playerSpeed: 1.1, label: 'Normal 🤖', color: 'bg-blue-500', multiplier: 2.5 },
+//   difícil: { itemSpeed: 2.6, spawnInterval: 650, mouseChance: 0.35, playerSpeed: 1.0, label: 'Difícil 🔥', color: 'bg-orange-500', multiplier: 7 },
+//   imposible: { itemSpeed: 4.2, spawnInterval: 400, mouseChance: 0.5, playerSpeed: 0.9, label: 'Imposible 💀', color: 'bg-red-600', multiplier: 25 }
+// };
+
 const DIFFICULTIES = {
-  fácil: { itemSpeed: 1.2, spawnInterval: 1200, mouseChance: 0.1, playerSpeed: 1.3, label: 'Fácil 🥯', color: 'bg-green-500', multiplier: 1 },
-  normal: { itemSpeed: 1.8, spawnInterval: 900, mouseChance: 0.2, playerSpeed: 1.1, label: 'Normal 🤖', color: 'bg-blue-500', multiplier: 2.5 },
-  difícil: { itemSpeed: 2.6, spawnInterval: 650, mouseChance: 0.35, playerSpeed: 1.0, label: 'Difícil 🔥', color: 'bg-orange-500', multiplier: 7 },
-  imposible: { itemSpeed: 4.2, spawnInterval: 400, mouseChance: 0.5, playerSpeed: 0.9, label: 'Imposible 💀', color: 'bg-red-600', multiplier: 25 }
+  fácil: {
+    // Muy muy lento, sin aumento con el puntaje
+    itemSpeed: 0.8,
+    spawnInterval: 1400,
+    mouseChance: 0.08,
+    playerSpeed: 1.25,
+    label: 'Fácil 🥯',
+    color: 'bg-green-500',
+    multiplier: 0.5,
+    speedIncrease: false, // no aumenta la velocidad con el puntaje
+    speedScoreDivisor: 9999, // irrelevante cuando speedIncrease=false
+    spawnDynamic: false, // intervalo fijo
+    spawnDecreasePerPoint: 0
+  },
+  normal: {
+    // Un poco más lento que antes, pero sí sube despacio con el puntaje
+    itemSpeed: 1.6,
+    spawnInterval: 950,
+    mouseChance: 0.18,
+    playerSpeed: 1.15,
+    label: 'Normal 🤖',
+    color: 'bg-blue-500',
+    multiplier: 2,
+    speedIncrease: true,
+    speedScoreDivisor: 800, // aumento suave de velocidad con el puntaje
+    spawnDynamic: true,
+    spawnDecreasePerPoint: 0.15 // reduce spawnInterval suavemente
+  },
+  difícil: {
+    // Un poco rápido pero no extremo; más ratones y aparición algo más frecuente
+    itemSpeed: 2.6,
+    spawnInterval: 650,
+    mouseChance: 0.45, // más probabilidad de ratones
+    playerSpeed: 1.05,
+    label: 'Difícil 🔥',
+    color: 'bg-orange-500',
+    multiplier: 4,
+    speedIncrease: true,
+    speedScoreDivisor: 500, // aumenta un poco más rápido que normal
+    spawnDynamic: true,
+    spawnDecreasePerPoint: 0.5 // disminuye spawnInterval más rápido para más aparición
+  },
+  imposible: {
+    // Mantener similar a la versión existente
+    itemSpeed: 3.8,
+    spawnInterval: 450,
+    mouseChance: 0.5,
+    playerSpeed: 0.95,
+    label: 'Imposible 💀',
+    color: 'bg-red-600',
+    multiplier: 8,
+    speedIncrease: true,
+    speedScoreDivisor: 400,
+    spawnDynamic: true,
+    spawnDecreasePerPoint: 1.0
+  }
 };
 
 export default function DorayakiGame({ theme = 'original', userName }) {
@@ -72,12 +131,14 @@ export default function DorayakiGame({ theme = 'original', userName }) {
   const spawnItem = () => {
     const config = DIFFICULTIES[difficulty];
     const isMouse = Math.random() < config.mouseChance;
+    const baseSpeed = config.itemSpeed + Math.random() * 0.5;
+    const speed = baseSpeed + (config.speedIncrease ? (scoreRef.current / config.speedScoreDivisor) : 0);
     return {
       id: Math.random(),
       x: Math.random() * 90 + 5,
       y: -10,
       type: isMouse ? 'mouse' : 'dorayaki',
-      speed: config.itemSpeed + Math.random() * 1.5 + (scoreRef.current / 500)
+      speed
     };
   };
 
@@ -106,7 +167,15 @@ export default function DorayakiGame({ theme = 'original', userName }) {
 
       if (time > nextSpawnRef.current) {
         setItems(prev => [...prev, spawnItem()]);
-        nextSpawnRef.current = time + Math.max(config.spawnInterval * 0.5, config.spawnInterval - (scoreRef.current * 1.2));
+        // Calcular siguiente spawn dependiendo de la dificultad: algunas no cambian con el puntaje
+        if (config.spawnDynamic) {
+          // Reducir el intervalo conforme sube el puntaje, hasta un tope del 50% del intervalo base
+          const decreased = config.spawnInterval - (scoreRef.current * config.spawnDecreasePerPoint);
+          const minInterval = Math.max(config.spawnInterval * 0.5, 120);
+          nextSpawnRef.current = time + Math.max(minInterval, decreased);
+        } else {
+          nextSpawnRef.current = time + config.spawnInterval;
+        }
       }
 
       setItems(prev => {
@@ -182,7 +251,7 @@ export default function DorayakiGame({ theme = 'original', userName }) {
   if (theme !== 'doraemon') return null;
 
   return (
-    <section className="py-24 px-4 bg-slate-900/40 relative overflow-hidden" id="dorayaki-game">
+    <section className="py-10 px-4 bg-slate-900/40 relative overflow-hidden" id="dorayaki-game">
       <div className="max-w-6xl mx-auto flex flex-col items-center">
         <h2 className="text-4xl font-black text-white mb-2 uppercase italic tracking-tighter text-center">
           🥯 Dorayaki Catch
