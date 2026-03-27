@@ -4,6 +4,19 @@ import { CheckCircle2, XCircle, Brain, Trophy } from 'lucide-react';
 import { config } from '../config';
 import api from '../api';
 
+const MAX_QUIZ_QUESTIONS = 15;
+
+function getRandomQuestions(questions, count) {
+  const shuffled = [...questions];
+
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+
+  return shuffled.slice(0, count);
+}
+
 export default function MiniQuiz({ theme = 'original', onComplete, userName }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -11,9 +24,14 @@ export default function MiniQuiz({ theme = 'original', onComplete, userName }) {
   const [feedback, setFeedback] = useState(null);
   const [selectedAnswer, setSelectedAnswer] = useState(null);
   const [history, setHistory] = useState([]);
+  const [quizRoundSeed, setQuizRoundSeed] = useState(0);
 
-  // Use theme-specific quiz from config
-  const quizData = config.themes[theme].quiz;
+  const quizData = useMemo(() => {
+    const questions = config.themes[theme]?.quiz || [];
+    if (questions.length <= MAX_QUIZ_QUESTIONS) return questions;
+
+    return getRandomQuestions(questions, MAX_QUIZ_QUESTIONS);
+  }, [theme, quizRoundSeed]);
 
   const fetchHistory = async () => {
     try {
@@ -193,6 +211,9 @@ export default function MiniQuiz({ theme = 'original', onComplete, userName }) {
                     setCurrentStep(0);
                     setCurrentQuestion(0);
                     setScore(0);
+                    setFeedback(null);
+                    setSelectedAnswer(null);
+                    setQuizRoundSeed((prev) => prev + 1);
                   }}
                   className="text-primary-400 underline font-semibold hover:text-white transition-colors"
                 >

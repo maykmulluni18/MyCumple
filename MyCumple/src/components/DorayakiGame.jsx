@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trophy, Play, MousePointer2, AlertCircle, Keyboard, Zap } from 'lucide-react';
+import { Trophy, Play, MousePointer2, AlertCircle, Keyboard, Zap, X } from 'lucide-react';
 import api from '../api';
 
 // const DIFFICULTIES = {
@@ -329,6 +329,17 @@ export default function DorayakiGame({ theme = 'original', userName }) {
                 {difficulty}
               </div>
             </div>
+
+            {gameState === 'playing' && (
+              <button
+                onClick={endGame}
+                className="absolute top-8 right-8 z-40 w-11 h-11 rounded-full bg-red-500/80 hover:bg-red-500 text-white border-2 border-white/20 shadow-lg flex items-center justify-center transition-all"
+                aria-label="Finalizar juego"
+                title="Finalizar juego"
+              >
+                <X size={20} />
+              </button>
+            )}
 
             {items.map(item => (
               <div key={item.id} className="absolute text-4xl" style={{ left: `${item.x}%`, top: `${item.y}%`, transform: 'translate(-50%, -50%)' }}>
